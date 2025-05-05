@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Mind Mate</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0; padding: 0;
+      background: #f5f5f5;
+      text-align: center;
+    }
+    .page {
+      display: none;
+      padding: 20px;
+    }
+    .active {
+      display: block;
+    }
+    button {
+      padding: 10px 20px;
+      margin-top: 20px;
+      font-size: 16px;
+      background: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    input, select {
+      padding: 8px;
+      margin: 5px 0;
+      width: 100%;
+    }
+    .result {
+      font-size: 20px;
+      font-weight: bold;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+
+<!-- Page 1: Profile -->
+<div class="page active" id="page1">
+  <h2>Step 1: Profile</h2>
+  <input type="text" id="name" placeholder="Enter your name" required>
+  <label for="gender">Select your gender:</label>
+  <select id="gender" required>
+    <option value="">-- Select --</option>
+    <option value="male">Male</option>
+    <option value="female">Female</option>
+    <option value="other">Other</option>
+  </select>
+  <input type="number" id="age" placeholder="Enter your age" required>
+  <input type="number" id="weight" placeholder="Enter your weight (kg)" required>
+  <input type="number" id="height" placeholder="Enter your height (cm)" required>
+
+  <button onclick="calculateBMI()">Calculate BMI</button>
+  <div id="bmiResult"></div>
+
+  <button onclick="goToPage(2)">Next ➡️</button>
+</div>
+
+<!-- Page 2: Mood -->
+<div class="page" id="page2">
+  <h2>Step 2: Mood of the Day</h2>
+  <p>Select your mood:</p>
+  <button onclick="selectMood('Sleepy', '🥴')">🥴 Sleepy</button>
+  <button onclick="selectMood('Active', '😀')">😀 Active</button>
+  <button onclick="selectMood('Normal', '😐')">😐 Normal</button>
+  <div class="result" id="moodDisplay"></div>
+  <button onclick="goToPage(3)">Next ➡️</button>
+</div>
+
+<!-- Page 3: Daily Goals + GPS Step Tracker -->
+<div class="page" id="page3">
+  <h2>Step 3: Daily Goals</h2>
+
+  <h3>🚶 Steps (GPS Tracking Enabled)</h3>
+  <button onclick="startTracking()">Start GPS Step Tracker</button>
+  <div class="result" id="stepCounter">Steps: 0</div>
+
+  <h3>💧 Water Intake</h3>
+  <input type="number" id="waterInput" placeholder="Enter water drank (ml)">
+  <button onclick="addWater()">Add</button>
+  <div id="waterResult">Total: 0 ml</div>
+
+  <h3>🛌 Sleep</h3>
+  <label>Sleep Time:</label>
+  <input type="time" id="sleepTime">
+  <label>Wake Time:</label>
+  <input type="time" id="wakeTime">
+  <button onclick="calculateSleep()">Calculate Sleep</button>
+  <div id="sleepResult"></div>
+
+  <button onclick="checkGoals()">Next ➡️</button>
+</div>
+
+<!-- Page 4: Emergency Contact -->
+<div class="page" id="page4">
+  <h2>Step 4: Emergency Contact</h2>
+  <input type="tel" id="emergencyContact" placeholder="Enter emergency contact number">
+  <button onclick="saveEmergency()">Save Contact</button>
+  <div id="emergencyDisplay"></div>
+</div>
+
+<script>
+  let currentPage = 1;
+  let totalWater = 0;
+  let prevCoords = null;
+  let totalSteps = 0;
+
+  function goToPage(pageNum) {
+    document.getElementById(page${currentPage}).classList.remove('active');
+    document.getElementById(page${pageNum}).classList.add('active');
+    currentPage = pageNum;
+  }
+
+  function selectMood(mood, emoji) {
+    document.getElementById('moodDisplay').innerText = You are feeling ${mood.toUpperCase()} ${emoji};
+  }
+
+  function addWater() {
+    const input = parseInt(document.getElementById('waterInput').value);
+    if (!isNaN(input)) {
+      totalWater += input;
+      document.getElementById('waterResult').innerText = Total: ${totalWater} ml;
+    }
+  }
+
+  function calculateSleep() {
+    const sleepTime = document.getElementById('sleepTime').value;
+    const wakeTime = document.getElementById('wakeTime').value;
+    if (sleepTime && wakeTime) {
+      const [sh, sm] = sleepTime.split(':').map(Number);
+      const [wh, wm] = wakeTime.split(':').map(Number);
+      let sleepMinutes = ((wh * 60 + wm) - (sh * 60 + sm));
+      if (sleepMinutes < 0) sleepMinutes += 1440; 
+      const hours = (sleepMinutes / 60).toFixed(1);
+      document.getElementById('sleepResult').innerText = You slept ${hours} hours;
+    }
+  }
+
+  function calculateBMI() {
+    const weight = parseFloat(document.getElementById('weight').value);
+    const heightCm = parseFloat(document.getElementById('height').value);
+
+    if (!isNaN(weight) && !isNaN(heightCm) && weight > 0 && heightCm > 0) {
+      const heightM = heightCm / 100;  
+      const bmi = (weight / (heightM * heightM)).toFixed(2);
+      document.getElementById('bmiResult').innerText = Your BMI: ${bmi};
+    } else {
+      document.getElementById('bmiResult').innerText = ⚠️ Please enter valid weight and height!;
+    }
+  }
+
+  function startTracking() {
+    if (navigator.geolocation) {
+      navigator.geolocation.watchPosition(position => {
+        let { latitude, longitude } = position.coords;
+        if (prevCoords) {
+          let distance = getDistance(prevCoords.lat, prevCoords.lon, latitude, longitude);
+          totalSteps += Math.round(distance / 0.8);
+          document.getElementById('stepCounter').innerText = Steps: ${totalSteps};
+        }
+        prevCoords = { lat: latitude, lon: longitude };
+      });
+    } else {
+      alert("Geolocation not supported!");
+    }
+  }
+
+  function getDistance(lat1, lon1, lat2, lon2) {
+    const R = 6371e3;
+    const dLat = (lat2 - lat1) * (Math.PI / 180);
+    const dLon = (lon2 - lon1) * (Math.PI / 180);
+    const a = Math.sin(dLat / 2) * 2 + Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) * Math.sin(dLon / 2) * 2;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  }
+</script>
+
+</body>
+</html>
